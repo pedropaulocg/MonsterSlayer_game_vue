@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+        padding: 0;
+        font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+      }
+      #app {
+        width: 100%;
+        padding-top: 3rem;
+        text-align: center;
+      }
+      .gameHud {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10rem;
+        box-shadow: 1px 1px 4px rgb(173, 173, 173);
+        padding: 3rem;
+        margin: 0 20px;
+        flex-wrap: wrap;
+      }
+      .hp {
+        width: 300px;
+        height: 25px;
+        border: 1px solid black;
+        margin-top: 10px;
+      }
+      .progress {
+        background-color: rgb(53, 204, 53);
+        height: 100%;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 5rem;
+        justify-content: center;
+        box-shadow: 1px 1px 4px rgb(173, 173, 173);
+        padding: 3rem;
+        margin: 20px 0;
+      }
+      .btn {
+        padding: 0.5rem 1rem;
+        font-size: 20px;
+        border: none;
+        border-radius: 5px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        cursor: pointer;
+      }
+      .attack {
+        background-color: #ffd342;
+      }
+      .attackSpe {
+        color: #fff;
+        background-color: rgb(250, 62, 62);
+      }
+      .heal {
+        background-color: rgb(64, 255, 47);
+      }
+      .giveUp {
+        background-color: rgb(70, 70, 255);
+        color: #fff;
+      }
+      .start {
+        padding: 10px 60px;
+        font-size: 40px;
+        background-color: rgb(45, 45, 241);
+        color: #fff;
+        border: none;
+        animation: pulse 1.5s infinite;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .lowLife {
+        background-color: red;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(70, 70, 255, 0.397);
+          transform: scale(1);
+        }
+        70% {
+          box-shadow: 0 0 0 30px rgba(70, 70, 255, 0);
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      .modal-nome input {
+        height: 2rem;
+        font-size: 22px;
+        padding: 5px;
+      }
+      .validation {
+        border: 2px solid red;
+        animation: tilt 0.5s forwards;
+      }
+      .validation::placeholder {
+        color: rgb(243, 101, 101);
+      }
+      .validation:focus {
+        outline: red;
+      }
+      @keyframes tilt {
+        0% {
+          transform: translateX(10px);
+        }
+        10% {
+          transform: translateX(0);
+        }
+        20% {
+          transform: translateX(-10px);
+        }
+        30% {
+          transform: translateX(0);
+        }
+        40% {
+          transform: translateX(10px);
+        }
+        50% {
+          transform: translateX(0);
+        }
+        60% {
+          transform: translateX(-10px);
+        }
+        100% {
+          transform: translateX(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="gameHud" v-if="gameStart" v-show="!gameEnd">
+        <div class="player">
+          <p>{{ player }}</p>
+          <div class="hp">
+            <div
+              class="progress"
+              :style="{width: lifePlayer + '%'}"
+              :class="{lowLife: lifePlayer < 30}"
+            ></div>
+          </div>
+          <p>{{ lifePlayer }}</p>
+        </div>
+        <div class="monster">
+          <p>Monster</p>
+          <div class="hp">
+            <div
+              class="progress"
+              :style="{width: lifeMonster + '%'}"
+              :class="{lowLife: lifeMonster < 30}"
+            ></div>
+          </div>
+          <p>{{ lifeMonster }}</p>
+        </div>
+      </div>
+      <div class="logo" v-else>
+        <h1>Monster Slayer</h1>
+      </div>
+      <div class="gameover" v-if="gameEnd">
+        <h1 v-if="monsterLost">Parabéns {{player}}, você ganhou</h1>
+        <h1 v-if="playerLost">Sinto muito {{player}}, o mosntro te matou</h1>
+      </div>
+      <div class="controls">
+        <div class="gameButtons" v-if="gameStart" v-show="!gameEnd">
+          <button class="btn attack" @click="attack">Attack</button>
+          <button class="btn attackSpe" @click="specialAttack">
+            Special attack
+          </button>
+          <button class="btn heal" @click="heal">Heal</button>
+          <button class="btn giveUp" @click="run">Run</button>
+        </div>
+        <div class="startGame" v-else>
+          <button class="start" @click="start">START</button>
+        </div>
+        <div class="restart" v-show="gameEnd">
+          <button class="start" @click="run">RESTART</button>
+        </div>
+      </div>
+      <div class="modal-nome">
+        <input
+          type="text"
+          placeholder="Qual seu nome?"
+          v-model="player"
+          v-if="!gameStart"
+          :class="{validation: inputValidation}"
+          @keyup.enter="start"
+        />
+      </div>
+      <!-- <section class="logContainer">
+        <div class="logMessage" v-for="log in logs">
+          <p v-if="log.ataque">
+            <span v-if="!log.monster">{{log.personagem}}</span>
+            <span v-else>Monster</span>
+            <span v-if="log.ataque">atacou</span><span v-else>Curou</span>
+            <span v-if="!log.monster">monster</span>
+            <span v-else>{{log.personagem}}</span>
+            {{log.pontos}} pontos
+          </p>
+          <p></p>
+        </div>
+      </section> -->
+    </div>
+  </body>
+  <script>
+    new Vue({
+      el: "#app",
+      data: {
+        player: "",
+        lifePlayer: 100,
+        lifeMonster: 100,
+        gameStart: false,
+        inputValidation: false,
+        gameEnd: false,
+        playerLost: false,
+        monsterLost: false,
+      },
+      methods: {
+        start() {
+          if (this.player == "") {
+            this.gameStart = false;
+            this.inputValidation = true;
+          } else {
+            this.gameStart = true;
+            this.inputValidation = false;
+          }
+        },
+        run() {
+          this.gameStart = false;
+          this.lifeMonster = 100;
+          this.lifePlayer = 100;
+          this.gameStart = false;
+          this.gameEnd = false;
+          this.playerLost = false;
+          this.monsterLost = false;
+        },
+        attack() {
+          let dano = Math.floor(Math.random() * (10 - 7 + 1) + 7);
+          let danoMonster = dano + Math.floor(Math.random() * (3 - 1 + 1) + 1);
+
+          this.lifePlayer = this.lifePlayer - danoMonster;
+          this.lifeMonster = this.lifeMonster - dano;
+        },
+        specialAttack() {
+          let dano = Math.floor(Math.random() * (10 - 7 + 1) + 7);
+          let danoMonster = dano + Math.floor(Math.random() * (3 - 1 + 1) + 1);
+          let powerUp = dano + Math.floor(Math.random() * (4 - 1 + 1) + 1);
+
+          this.lifePlayer = this.lifePlayer - danoMonster;
+          this.lifeMonster = this.lifeMonster - (dano + powerUp);
+        },
+        heal() {
+          let healLife = Math.floor(Math.random() * (20 - 10 + 1) + 10);
+          let dano = Math.floor(Math.random() * (10 - 7 + 1) + 7);
+          let danoMonster = dano + Math.floor(Math.random() * (3 - 1 + 1) + 1);
+
+          this.lifePlayer = this.lifePlayer - danoMonster;
+          this.lifePlayer = this.lifePlayer + healLife;
+        },
+      },
+      watch: {
+        lifePlayer(newValue, oldValue) {
+          if (newValue <= 0) {
+            this.playerLost = true;
+            this.gameEnd = true;
+          }
+        },
+        lifeMonster(newValue, oldValue) {
+          if (newValue <= 0) {
+            this.monsterLost = true;
+            this.gameEnd = true;
+          }
+        },
+      },
+    });
+  </script>
+</html>
